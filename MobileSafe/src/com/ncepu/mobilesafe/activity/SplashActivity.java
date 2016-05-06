@@ -1,5 +1,6 @@
 package com.ncepu.mobilesafe.activity;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -10,19 +11,31 @@ import org.apache.http.HttpConnection;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.lidroid.xutils.HttpUtils;
+import com.lidroid.xutils.exception.HttpException;
+import com.lidroid.xutils.http.ResponseInfo;
+import com.lidroid.xutils.http.callback.RequestCallBack;
 import com.ncepu.mobilesafe.R;
 import com.ncepu.mobilesafe.R.layout;
 import com.ncepu.mobilesafe.utils.StreamUtils;
 
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.AlertDialog.Builder;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnCancelListener;
+import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.view.Menu;
+import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -32,9 +45,9 @@ public class SplashActivity extends Activity {
 	protected static final int CODE_URL_ERROR = 2;
 	protected static final int CODE_NET_ERROR = 3;
 	protected static final int CODE_JSON_ERROR = 4 ;
-	HttpURLConnection conn;
+
 	TextView tvVersion;
-	String urlString = "http://10.0.2.2:8080/update.json";
+	TextView tvProgress;
 	
 	private String mVersionName;//服务器端版本名称
 	private int mVersionCode;//服务器端版本号
@@ -45,7 +58,7 @@ public class SplashActivity extends Activity {
 		public void handleMessage(Message msg) {
 			switch (msg.what) {
 			case CODE_UPDATE_DIALOG:
-				//showUpdateDailog();
+				showUpdateDailog();
 				break;
 			case CODE_URL_ERROR:
 				Toast.makeText(SplashActivity.this, "url错误", Toast.LENGTH_SHORT)
@@ -74,6 +87,7 @@ public class SplashActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.splash_activity);
+		tvProgress = (TextView) findViewById(R.id.tv_progress);// 默认隐藏
         tvVersion = (TextView) findViewById(R.id.tv_version);
         tvVersion.setText("版本名：" + getVersionName());
         checkVersion();
@@ -122,8 +136,9 @@ public class SplashActivity extends Activity {
 		new Thread (){
 			public void run() {
 				Message msg = Message.obtain();
+				HttpURLConnection conn = null;
 				try {
-					URL url = new URL(urlString);
+					URL url = new URL("http://10.0.2.2:8080/update.json");
 					conn = (HttpURLConnection) url.openConnection();
 					
 					conn.setRequestMethod("GET");
@@ -135,11 +150,16 @@ public class SplashActivity extends Activity {
 					if(responsecode == 200) {
 						InputStream inputStream = conn.getInputStream();
 						String readFrom = StreamUtils.readFromStrem(inputStream);//获取服务器端版本信息
+						
+						// 解析json
 						JSONObject jsonObject = new JSONObject(readFrom);
+						 System.out.println("网络返回:" + readFrom);
 						mVersionName = jsonObject.getString("versionName");
 						mVersionCode = jsonObject.getInt("versionCode");
 						mDesc = jsonObject.getString("description");
-						mDownloadUrl = jsonObject.getString("downloadUrl");
+						mDownloadUrl = jsonObject.getString("downloadUrl");	
+						System.out.println("================版本描述:" + mDesc +mVersionName +mVersionCode);
+						
 						//对比版本号
 						if(mVersionCode > getVersionCode()){
 							// 服务器的VersionCode大于本地的VersionCode
@@ -183,6 +203,93 @@ public class SplashActivity extends Activity {
 			
 		}.start();
 	}
+    /**
+     * 升级对话框
+     */
+    private void showUpdateDailog(){
+    		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+    		builder.setTitle("最新版本：" + mVersionName);
+    		builder.setMessage(mDesc);
+    		builder.setPositiveButton("立即更新", new OnClickListener() {
+				
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					// TODO Auto-generated method stub
+					download();
+				}
+			});
+    		
+    		builder.setNegativeButton("稍后再说", new OnClickListener() {
+				
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					enterHome();
+					
+				}
+			});
+    		//如果用户直接按返回键，触发这个方法。
+    		builder.setOnCancelListener( new OnCancelListener() {		
+				@Override
+				public void onCancel(DialogInterface dialog) {
+					enterHome();					
+				}
+			});
+    		builder.show();
+    }
+    /**
+     * 下载apk；
+     */
+    private void download() {
+    	
+		if(Environment.getExternalStorageState().
+				equals(Environment.MEDIA_MOUNTED)){
+			
+			tvProgress.setVisibility(View.VISIBLE);// 显示进度
+			
+			String target = Environment.getExternalStorageDirectory()
+					+ "/update.apk";
+			//xutils
+			HttpUtils http = new HttpUtils();
+			http.download(mDownloadUrl, target, new RequestCallBack<File>() {
+				@Override
+				public void onLoading(long total, long current,
+						boolean isUploading) {
+					// TODO Auto-generated method stub
+					super.onLoading(total, current, isUploading);
+					tvProgress.setText("下载进度：" + current * 100 / total + "%");
+				}
+				@Override
+				public void onSuccess(ResponseInfo<File> arg0) {
+					// TODO Auto-generated method stub
+					Intent intent = new Intent("android.intent.action.VIEW");
+					intent.addCategory("android.intent.category.DEFAULT");
+					intent.setDataAndType(Uri.fromFile(arg0.result), "application/vnd.android.package-archive");
+					startActivityForResult(intent, 0);// 如果用户取消安装的话,
+													// 会返回结果,回调方法onActivityResult
+				}
+				
+				@Override
+				public void onFailure(HttpException arg0, String arg1) {
+					// TODO Auto-generated method stub
+					Toast.makeText(SplashActivity.this, "下载失败!",
+							Toast.LENGTH_SHORT).show();
+					enterHome();
+				}
+			});
+		}else {
+			Toast.makeText(SplashActivity.this, "没有找到sdcard!",
+					Toast.LENGTH_SHORT).show();
+		}
+	}
+    /**
+     * 用户取消安装
+     */
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    	// TODO Auto-generated method stub
+    	super.onActivityResult(requestCode, resultCode, data);
+    	enterHome();
+    } 
     /**
      * 进入主界面。
      */
