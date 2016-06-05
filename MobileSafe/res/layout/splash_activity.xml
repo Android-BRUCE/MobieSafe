@@ -2,7 +2,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".SplashActivity" 
+  	android:id="@+id/rl_root"
     android:background="@drawable/launcher_bg">
 
     <TextView
@@ -11,7 +11,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="189dp"
+        android:layout_marginTop="220dp"
         android:text="版本号：1.0"
         android:textSize="20sp" 
         android:shadowColor="#f00"

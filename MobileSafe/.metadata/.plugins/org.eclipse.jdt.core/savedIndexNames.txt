@@ -1,0 +1,2 @@
+INDEX VERSION 1.126+C:\Users\BRUCE\Desktop\workspace\MobileSafe\.metadata\.plugins\org.eclipse.jdt.core
+473778034.index

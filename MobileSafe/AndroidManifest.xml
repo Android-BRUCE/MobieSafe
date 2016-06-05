@@ -3,17 +3,39 @@
     package="com.ncepu.mobilesafe"
     android:versionCode="1"
     android:versionName="1.0" >
-
+	
+    <instrumentation 
+        android:targetPackage="com.ncepu.mobilesafe"
+        android:name="android.test.InstrumentationTestRunner"
+        ></instrumentation>
     <uses-sdk
         android:minSdkVersion="8"
-        android:targetSdkVersion="21" />
-    <uses-permission android:name="android.permission.INTERNET"/>
-	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+        android:targetSdkVersion="18" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <uses-permission android:name="android.permission.SEND_SMS" />
+    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_MOCK_LOCATION" />
+    <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.PROCESS_OUTGOING_CALLS"/>
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+    <uses-permission android:name="android.launcher2.permission.READ_SETTINGS"/>
+    <uses-permission android:name="android.permission.WIFI_STATE_CHANGE"/>
+    <uses-permission android:name="android.permission.CALL_PHONE"/>
+    <uses-permission android:name="android.permission.READ_CALL_LOG"/>
+    <uses-permission android:name="android.permission.WRITE_CALL_LOG"/>
+   
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
+        <uses-library android:name="android.test.runner"/>
         <activity
             android:name="com.ncepu.mobilesafe.activity.SplashActivity"
             android:label="@string/app_name" >
@@ -24,6 +46,46 @@
             </intent-filter>
         </activity>
         <activity android:name="com.ncepu.mobilesafe.activity.HomeActivity"/>
+        <activity android:name="com.ncepu.mobilesafe.activity.SettingActivity"/>
+        <activity android:name="com.ncepu.mobilesafe.activity.LostFindActivity" />
+        <activity android:name="com.ncepu.mobilesafe.activity.Setup1Activity"/>
+        <activity android:name="com.ncepu.mobilesafe.activity.Setup2Activity"/>
+		<activity android:name="com.ncepu.mobilesafe.activity.Setup3Activity"/>
+		<activity android:name="com.ncepu.mobilesafe.activity.Setup4Activity"/>
+		<activity android:name="com.ncepu.mobilesafe.activity.ContactActivity"/>
+		<activity android:name="com.ncepu.mobilesafe.activity.AToolsActivity"/>
+		<activity android:name="com.ncepu.mobilesafe.activity.AddressActivity"/>
+        <activity android:name="com.ncepu.mobilesafe.activity.CallSafeActivity"/>
+        <activity android:name="com.ncepu.mobilesafe.activity.CallSafeActivity2"/>
+		<activity android:name="com.ncepu.mobilesafe.activity.DragViewActivity"
+		    	  android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+		<activity android:name="com.ncepu.mobilesafe.activity.AppManagerAvtivity"/>
+		
+        <receiver android:name="com.ncepu.mobilesafe.receiver.BootCompleteReceiver" >
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+        
+        <receiver android:name="com.ncepu.mobilesafe.receiver.SmsReceiver"
+            >
+            <intent-filter android:priority="2147483647">
+                <action android:name="android.provider.Telephony.SMS_RECEIVED"/>
+            </intent-filter>
+        </receiver>
+        
+		<service android:name="com.ncepu.mobilesafe.service.LocationService"> </service>
+		<service android:name="com.ncepu.mobilesafe.service.QueryAddressService"></service>
+		<service android:name="com.ncepu.mobilesafe.service.CallSafeServiceActivity"></service>	
+	<receiver android:name="com.ncepu.mobilesafe.activity.DeviceAdminSample"
+        android:label="@string/sample_device_admin"
+        android:description="@string/sample_device_admin_description"
+        android:permission="android.permission.BIND_DEVICE_ADMIN">
+    <meta-data android:name="android.app.device_admin"
+            android:resource="@xml/device_admin_sample" />
+    <intent-filter>
+        <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+    </intent-filter>  
+</receiver>
     </application>
-
 </manifest>

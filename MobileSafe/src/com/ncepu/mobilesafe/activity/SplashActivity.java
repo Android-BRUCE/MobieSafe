@@ -1,13 +1,13 @@
 package com.ncepu.mobilesafe.activity;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-import org.apache.http.HttpConnection;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -16,7 +16,6 @@ import com.lidroid.xutils.exception.HttpException;
 import com.lidroid.xutils.http.ResponseInfo;
 import com.lidroid.xutils.http.callback.RequestCallBack;
 import com.ncepu.mobilesafe.R;
-import com.ncepu.mobilesafe.R.layout;
 import com.ncepu.mobilesafe.utils.StreamUtils;
 
 import android.net.Uri;
@@ -26,19 +25,24 @@ import android.os.Handler;
 import android.os.Message;
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.AlertDialog.Builder;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnCancelListener;
 import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
-import android.view.Menu;
 import android.view.View;
+import android.view.animation.AlphaAnimation;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-
+/**
+ * 闪屏页面
+ * @author BRUCE
+ *
+ */
 public class SplashActivity extends Activity {
 	protected static final int CODE_UPDATE_DIALOG = 0;
 	protected static final int CODE_ENTER_HOME = 1;
@@ -48,7 +52,6 @@ public class SplashActivity extends Activity {
 
 	TextView tvVersion;
 	TextView tvProgress;
-	
 	private String mVersionName;//服务器端版本名称
 	private int mVersionCode;//服务器端版本号
 	private String mDesc;//服务器端版本描述
@@ -81,8 +84,10 @@ public class SplashActivity extends Activity {
 			default:
 				break;
 			}
-		}
+		};
 	};
+	private SharedPreferences spPreferences;
+	private RelativeLayout rlRoot;// 根布局
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -90,7 +95,25 @@ public class SplashActivity extends Activity {
 		tvProgress = (TextView) findViewById(R.id.tv_progress);// 默认隐藏
         tvVersion = (TextView) findViewById(R.id.tv_version);
         tvVersion.setText("版本名：" + getVersionName());
-        checkVersion();
+        rlRoot = (RelativeLayout) findViewById(R.id.rl_root);
+        
+        copyDB("address.db");//拷贝数据库到data/data/包名/files下？？
+        
+        //p判断是否需要更新
+        spPreferences = getSharedPreferences("config", MODE_PRIVATE);
+        boolean b = spPreferences.getBoolean("auto_update", true);
+        if(b) {
+			System.out.println("=========================这是开启自动更新");
+            checkVersion();
+        }else {
+			System.out.println("=========================这是关闭自动更新");
+        	mHandler.sendEmptyMessageDelayed(CODE_ENTER_HOME, 2000);// 延时2秒后发送消息为了闪屏页面的显示
+		}
+        
+        //设置闪屏页面的渐变动画
+        AlphaAnimation alphaAnimation = new AlphaAnimation(0.2f, 1f);
+        alphaAnimation.setDuration(2000);
+        rlRoot.startAnimation(alphaAnimation);
     }
     /**
      * 获取版本名字
@@ -133,8 +156,10 @@ public class SplashActivity extends Activity {
      */
     private void checkVersion() {
 		final long startTime = System.currentTimeMillis();
-		new Thread (){
+		
+		Thread thread = new Thread (){
 			public void run() {
+				
 				Message msg = Message.obtain();
 				HttpURLConnection conn = null;
 				try {
@@ -142,8 +167,8 @@ public class SplashActivity extends Activity {
 					conn = (HttpURLConnection) url.openConnection();
 					
 					conn.setRequestMethod("GET");
-					conn.setConnectTimeout(50000);
-					conn.setReadTimeout(50000);
+					conn.setConnectTimeout(5000);
+					conn.setReadTimeout(5000);
 					conn.connect();
 					
 					int responsecode = conn.getResponseCode();
@@ -192,16 +217,17 @@ public class SplashActivity extends Activity {
 							} catch (InterruptedException e) {
 								e.printStackTrace();
 							}
-
+						}
 							mHandler.sendMessage(msg);
 							if (conn != null) {
 								conn.disconnect();// 关闭网络连接
-							}
+							
 						}
 					}
 			}
 			
-		}.start();
+		};
+		thread.start();
 	}
     /**
      * 升级对话框
@@ -297,5 +323,38 @@ public class SplashActivity extends Activity {
     	Intent intent = new Intent(this,HomeActivity.class);
     	startActivity(intent);
     	finish();
+    }
+    /**
+     * 拷贝数据库。
+     */
+    private void copyDB(String dbName) {
+    	File destFile  = new File(getFilesDir(),dbName);
+    	if(destFile.exists()) {
+    		System.out.println("数据库已经拷贝了");
+    		return;
+    	}
+    	InputStream in = null;
+    	FileOutputStream out = null;
+    	try {
+			in = getAssets().open(dbName);
+			out = new FileOutputStream(destFile);
+			
+			byte[] b = new byte[1024];
+			int len = 0;
+			while((len = in.read(b)) != -1) {
+				out.write(b, 0, len);
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}finally {
+			try {
+				in.close();
+				out.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
     }
 }
