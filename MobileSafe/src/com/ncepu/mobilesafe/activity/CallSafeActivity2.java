@@ -56,12 +56,10 @@ public class CallSafeActivity2 extends Activity {
 	private int maxCount = 20;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+        super.onCreate(savedInstanceState); 
         setContentView(R.layout.call_safe_activity2);
         initUI();//初始化UI
-		System.out.println("=======初始化data 和ui");
         initData();
-		System.out.println("=======data2");
     }
     private Handler handler = new Handler(){
 		public void handleMessage(android.os.Message msg) {
@@ -125,7 +123,7 @@ public class CallSafeActivity2 extends Activity {
 				switch (scrollState) {
 				case OnScrollListener.SCROLL_STATE_IDLE:
 					int lastitem = list_view.getLastVisiblePosition();
-					if( lastitem == blackNumberInfolist.size() - 1) { 
+					if( lastitem == blackNumberInfolist.size() - 1) {
 						mstartIndex += maxCount;
 						if(mstartIndex >= totalNmuber){
 							Toast.makeText(CallSafeActivity2.this, "没有更多数据了", Toast.LENGTH_SHORT).show();
@@ -156,11 +154,12 @@ public class CallSafeActivity2 extends Activity {
 			public void onItemClick(AdapterView<?> parent, View view, int position,
 					long id) {
 				final int p = position;
-				final BlackNumberInfo clickinfo = (BlackNumberInfo) list_view.getItemAtPosition(position);
-				final String number = clickinfo.getNumber();
+				final BlackNumberInfo clickinfo = (BlackNumberInfo) list_view.getItemAtPosition(position);//拿到当前条目的对象
+				final String number = clickinfo.getNumber();//通过该条目对象拿到该对象的号码
+				
 				AlertDialog.Builder builder = new AlertDialog.Builder(CallSafeActivity2.this);
 				builder.setTitle("更改拦截模式");
-				String mode = dao.findNumber(number);
+				String mode = dao.findNumber(number);//拿到当前对象的拦截模式（模式有1,2,3.3种）
 				int checkedstyle = Integer.parseInt(mode) - 1;
 				builder.setSingleChoiceItems(items, checkedstyle,new DialogInterface.OnClickListener() {
 					
@@ -172,8 +171,9 @@ public class CallSafeActivity2 extends Activity {
 						//if(dao == null) {
 							//dao = new BlackNumberDao(CallSafeActivity2.this);
 						//}
-						boolean b = dao.changeNumberMode(number, mode);
+						boolean b = dao.changeNumberMode(number, mode);//更新数据库内容
 						if(b) {
+							//将当前条目删除并重新写入并刷新界面
 							BlackNumberInfo blackNumberInfo = new BlackNumberInfo();
 							blackNumberInfo.setNumber(number);
 							blackNumberInfo.setMode(mode);

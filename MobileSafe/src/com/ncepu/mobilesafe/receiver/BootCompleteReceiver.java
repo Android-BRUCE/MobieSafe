@@ -22,7 +22,7 @@ public class BootCompleteReceiver extends BroadcastReceiver {
 			//如果开启保护了，那么获取当前手机sim卡信息并与开启保护时候的sim比较判断
 			TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(
 					Context.TELEPHONY_SERVICE);
-			String simnum =  telephonyManager.getSimSerialNumber() + "111";
+			String simnum =  telephonyManager.getSimSerialNumber();
 			
 			String currentnum = telephonyManager.getLine1Number();
 			System.out.println("当前手机号码是 ： " + currentnum);

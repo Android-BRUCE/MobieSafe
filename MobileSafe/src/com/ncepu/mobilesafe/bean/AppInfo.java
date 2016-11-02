@@ -35,6 +35,8 @@ public class AppInfo {
 	 * app放置的位置
 	 */
 	private boolean  isRom;
+	
+	
 	public boolean isRom() {
 		return isRom;
 	}

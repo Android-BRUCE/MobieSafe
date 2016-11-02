@@ -11,11 +11,15 @@ import java.net.URL;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.google.gson.Gson;
 import com.lidroid.xutils.HttpUtils;
 import com.lidroid.xutils.exception.HttpException;
 import com.lidroid.xutils.http.ResponseInfo;
 import com.lidroid.xutils.http.callback.RequestCallBack;
+import com.lidroid.xutils.http.client.HttpRequest.HttpMethod;
 import com.ncepu.mobilesafe.R;
+import com.ncepu.mobilesafe.bean.VirusInfo;
+import com.ncepu.mobilesafe.db.dao.AntivirusDao;
 import com.ncepu.mobilesafe.utils.StreamUtils;
 
 import android.net.Uri;
@@ -23,6 +27,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -33,6 +38,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.graphics.BitmapFactory;
 import android.view.View;
 import android.view.animation.AlphaAnimation;
 import android.widget.RelativeLayout;
@@ -88,9 +94,11 @@ public class SplashActivity extends Activity {
 	};
 	private SharedPreferences spPreferences;
 	private RelativeLayout rlRoot;// 根布局
+	private AntivirusDao dao;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
         setContentView(R.layout.splash_activity);
 		tvProgress = (TextView) findViewById(R.id.tv_progress);// 默认隐藏
         tvVersion = (TextView) findViewById(R.id.tv_version);
@@ -98,7 +106,11 @@ public class SplashActivity extends Activity {
         rlRoot = (RelativeLayout) findViewById(R.id.rl_root);
         
         copyDB("address.db");//拷贝数据库到data/data/包名/files下？？
-        
+        copyDB("antivirus.db");
+        /**
+         * 更新病毒库
+         */
+        updateVirus();
         //p判断是否需要更新
         spPreferences = getSharedPreferences("config", MODE_PRIVATE);
         boolean b = spPreferences.getBoolean("auto_update", true);
@@ -114,8 +126,78 @@ public class SplashActivity extends Activity {
         AlphaAnimation alphaAnimation = new AlphaAnimation(0.2f, 1f);
         alphaAnimation.setDuration(2000);
         rlRoot.startAnimation(alphaAnimation);
+        
+        /**
+         * @author BRUCE
+         *  在手机桌面上显示应用快捷方式
+         */
+        createShoutcut();
+       
     }
     /**
+     * 更新病毒库
+     */
+    private void updateVirus() {
+    	
+    	dao = new AntivirusDao();
+		// 从互联网获取更新
+    	HttpUtils utils = new HttpUtils();
+    	String url = "http://10.1.16.56:8080/virus.jason";
+    	utils.send(HttpMethod.GET, url, new RequestCallBack<String>() {
+
+			@Override
+			public void onFailure(HttpException arg0, String arg1) {
+				
+			}
+
+			@Override
+			public void onSuccess(ResponseInfo<String> arg0) {
+				try {
+//				JSONObject object = new JSONObject(arg0.result);
+				
+//				String md5 = object.getString("md5");
+//				
+//				String desc = object.getString("desc");
+				/**
+				 * 应对大量数据，使用谷歌json jar包
+				 */
+				Gson gson = new Gson();
+				VirusInfo  virus = gson.fromJson(arg0.result, VirusInfo.class);
+				/*
+				 * 可以先在AntivirusDao进行判断 此病毒md5值在数据库中是否存在
+				 */
+				dao.addVirus(virus.md5, virus.desc);
+				}catch (Exception e){
+					e.printStackTrace();
+				}
+			}
+		});
+		
+	}
+	private void createShoutcut() {
+		// TODO Auto-generated method stub
+		Intent intent = new Intent();
+		intent.setAction("com.android.launcher.action.INSTALL_SHORTCUT");
+		intent.putExtra("duplicate", false);//false 不允许重复创建桌面快捷方式
+		
+		/**
+		 * 1.做什么事情
+		 * 2.叫什么名字
+		 * 3.长什么样子
+		 */
+		intent.putExtra(Intent.EXTRA_SHORTCUT_ICON, BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher));
+		intent.putExtra(Intent.EXTRA_SHORTCUT_NAME,"手机卫士");
+		//做什么事
+		//不能使用显示意图。
+		Intent shortCut = new Intent();
+		shortCut.setAction("homeActovityStart");
+		shortCut.addCategory("android.intent.category.DEFAULT");
+		intent.putExtra(Intent.EXTRA_SHORTCUT_INTENT,shortCut);
+		
+		sendBroadcast(intent);
+		
+	}
+	/**
      * 获取版本名字
      * @return
      */
@@ -320,7 +402,7 @@ public class SplashActivity extends Activity {
      * 进入主界面。
      */
     private void enterHome(){
-    	Intent intent = new Intent(this,HomeActivity.class);
+    	Intent intent = new Intent(SplashActivity.this,HomeActivity.class);
     	startActivity(intent);
     	finish();
     }

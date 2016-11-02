@@ -11,13 +11,8 @@ import android.widget.TextView;
 
 public class SettingClickView extends RelativeLayout {
 	
-	private String mTitle;
-	private String mDescOn;
-	private String mDescOff;
 	private TextView tvTitle;
 	private TextView tvDesc;
-	private CheckBox cbStatus;
-		
 	public SettingClickView(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
 		// TODO Auto-generated constructor stub

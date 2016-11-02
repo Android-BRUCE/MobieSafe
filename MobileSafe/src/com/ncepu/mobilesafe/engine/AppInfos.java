@@ -52,9 +52,6 @@ public class AppInfos {
 			File file = new File(apkSourceDir);
 			//apk的长度；
 			long apksize = file.length();
-			System.out.println("这是SD卡路径" + apkSourceDir);
-			
-			
 			
 			appInfo.setApkName(apkName);
 			appInfo.setApkPackageName(packageName);

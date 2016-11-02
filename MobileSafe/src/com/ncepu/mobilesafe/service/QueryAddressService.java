@@ -106,7 +106,7 @@ public class QueryAddressService extends Service {
 
 			String address = AddressDao.getAddress(number);
 			// Toast.makeText(context, address, Toast.LENGTH_LONG).show();
-			//showToast(address);
+			showToast(address);
 			System.out.println("=====dialog 广播");
 		}
 	}

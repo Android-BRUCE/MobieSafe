@@ -2,6 +2,7 @@ package com.ncepu.mobilesafe.bean;
 
 /**
  * Created by BRUCE on 2016/5/29 0029.
+ * 黑名单拦截模式的java bean
  */
 public class BlackNumberInfo {
     /**

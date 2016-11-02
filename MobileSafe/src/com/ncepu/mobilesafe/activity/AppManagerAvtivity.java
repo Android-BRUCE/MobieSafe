@@ -261,6 +261,7 @@ public class AppManagerAvtivity extends Activity implements OnClickListener{
 	    IntentFilter filter = new IntentFilter(Intent.ACTION_PACKAGE_REMOVED);
 	    filter.addDataScheme("package");//scheme 相当于http://中的http；根据package去执行
 	    registerReceiver(receiver, filter);
+	    
 	    list_view.setOnScrollListener(new OnScrollListener() {
 			
 			@Override
@@ -323,7 +324,6 @@ public class AppManagerAvtivity extends Activity implements OnClickListener{
 					popupWindow.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
 					int[] location = new int[2];//showAtLocation(Y)
 					view.getLocationInWindow(location);//获取view展示到窗体上面的位置
-					
 					popupWindow.showAtLocation(parent, Gravity.LEFT + Gravity.TOP, 70, location[1]);
 					
 					ScaleAnimation animation = new ScaleAnimation(0.5f, 1.0f, 0.5f, 1.0f, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);

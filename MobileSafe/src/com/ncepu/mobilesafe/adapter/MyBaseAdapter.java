@@ -3,18 +3,17 @@ package com.ncepu.mobilesafe.adapter;
 import java.util.List;
 
 import android.content.Context;
-import android.view.View;
-import android.view.ViewGroup;
 import android.widget.BaseAdapter;
-
 public abstract class MyBaseAdapter<T> extends BaseAdapter {
 	
 	public List<T> lists;
 	public Context context;
+	
 	protected MyBaseAdapter(List<T> lists, Context context){
 		this.context = context;
 		this.lists = lists;
 	}
+	
 	protected MyBaseAdapter() {
 		
 	}

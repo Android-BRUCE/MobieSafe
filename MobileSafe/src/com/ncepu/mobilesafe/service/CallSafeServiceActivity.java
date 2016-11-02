@@ -7,6 +7,7 @@ import com.ncepu.mobilesafe.db.dao.BlackNumberDao;
 
 import android.app.Service;
 import android.content.BroadcastReceiver;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -17,6 +18,7 @@ import android.os.IBinder;
 import android.telephony.PhoneStateListener;
 import android.telephony.SmsMessage;
 import android.telephony.TelephonyManager;
+import android.util.Log;
 /**
  * 通讯卫士，号码拦截。
  * @author BRUCE
@@ -27,6 +29,7 @@ public class CallSafeServiceActivity extends Service {
 	private BlackNumberDao dao;
 	private InterceptReceiver receiver;
 	private TelephonyManager telephonyManager;
+	private MyPhoneStateListener listener;
 	@Override
 	public IBinder onBind(Intent arg0) {
 		// TODO Auto-generated method stub
@@ -39,7 +42,7 @@ public class CallSafeServiceActivity extends Service {
 		dao = new BlackNumberDao(this);//初始化黑名单查询
 		
 		telephonyManager = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
-		MyPhoneStateListener listener = new MyPhoneStateListener();
+		listener = new MyPhoneStateListener();
 		telephonyManager.listen(listener, PhoneStateListener.LISTEN_CALL_STATE);//电话监听器需要call——phone权限
 		
 		//初始化短信广播
@@ -62,11 +65,10 @@ public class CallSafeServiceActivity extends Service {
 			case TelephonyManager.CALL_STATE_RINGING:
 				String mode = dao.findNumber(incomingNumber);
 				if(mode.equals("1") || mode.equals("2")) {
+					Uri uri = Uri.parse("content://call_log_calls");	
+					getContentResolver().registerContentObserver(uri, true, new MyContentObserver(incomingNumber, new Handler()));
 					//android.os.ServiceManager 类被隐藏了。
 					endCall();
-					Uri uri = Uri.parse("content://call_log_calls");
-					
-					getContentResolver().registerContentObserver(uri, true, new MyContentObserver(incomingNumber, new Handler()));
 				}
 				break;
 			}
@@ -87,16 +89,14 @@ public class CallSafeServiceActivity extends Service {
 			super(handler);
 			getContentResolver().unregisterContentObserver(this);
 			this.incomingNumber = incomingNumber;
-			System.out.println("来电电话是1 ： " + incomingNumber);
-			deleteCallLog(incomingNumber);
 		} 
 		//数据改变时调用
 		@Override
 			public void onChange(boolean selfChange) {
 			// TODO Auto-generated method stub
+			Log.i("CallLogObserver","呼叫记录数据库的内容变化了。");
 				getContentResolver().unregisterContentObserver(this);
 				deleteCallLog(incomingNumber);
-				System.out.println("来电电话是2 ： " + incomingNumber);
 				super.onChange(selfChange);
 			}
 	}
@@ -104,8 +104,9 @@ public class CallSafeServiceActivity extends Service {
 	
 	//删掉号码
 	private void deleteCallLog(String incomingNumber) {
-		Uri uri = Uri.parse("content://call_log/calls");
-		getContentResolver().delete(uri, "number=?", new String[]{incomingNumber});
+		ContentResolver resolver = getContentResolver();
+		Uri uri = Uri.parse("content://call_log_calls");
+		resolver.delete(uri, "number=?", new String[]{incomingNumber});
 	}
 	
 	/**
@@ -117,8 +118,8 @@ public class CallSafeServiceActivity extends Service {
 			//通过类加载器加载ServiceManager类
 			Class<?> clazz =  getClassLoader().loadClass("android.os.ServiceManager");
 			Method method = clazz.getDeclaredMethod("getService", String.class);//通过反射拿到类中方法。
-			IBinder binder = (IBinder) method.invoke(null, TELEPHONY_SERVICE);//invoke的receiver参数为static则为null
-			ITelephony.Stub.asInterface(binder).endCall();
+			IBinder binder = (IBinder) method.invoke(null, TELEPHONY_SERVICE);//调用方法，invoke的receiver参数为static则为null。getService（String name）传入一个参数即TELEPHONY_SERVICE
+			ITelephony.Stub.asInterface(binder).endCall();//aidl方式调用这个endcall方法
 			}
 			catch (Exception e) {
 				// TODO Auto-generated catch block
@@ -151,7 +152,7 @@ public class CallSafeServiceActivity extends Service {
 						abortBroadcast();
 					}
 					//智能拦截
-					if(smsBody.contains("xxx")) {
+					if(smsBody.contains("贷款")) {
 						abortBroadcast();
 					}
 				}
@@ -161,6 +162,9 @@ public class CallSafeServiceActivity extends Service {
 	@Override
 	public void onDestroy() {
 		unregisterReceiver(receiver);
+		receiver = null;
+		telephonyManager.listen(listener, PhoneStateListener.LISTEN_NONE);
+		listener = null;
 		super.onDestroy();
 	}
 }
